@@ -1,16 +1,16 @@
 HIDCON
 ======
 
-A tiny C utility for Windows.
+A tiny utility for Windows.
 
-Invoked from Windows shell, it can launch a console program hiding the console itself.
+Invoked from Windows shell, it can launch a console program hiding the console itself and optionally redirecting STDIN and STDERR to a file.
 
 
 Syntax
 ======
 
-    HIDCON <cmd> [parameters]
+    HIDCON [-o redir.txt] <cmd> [parameters]
     
 
 
-* The code is given to the Public Domain. *
+The code is given to the Public Domain.
