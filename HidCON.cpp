@@ -11,32 +11,50 @@
 #pragma comment(linker,"/DEFAULTLIB:USER32.lib")
 #pragma comment(linker,"/DEFAULTLIB:KERNEL32.lib")
 
+LPWSTR hidcon = L"HidCON";
+
 void _Go_ (void) {
     int Argc = 0;
     LPWSTR *Argv = CommandLineToArgvW(GetCommandLineW(), &Argc);
     if (!Argv || Argc < 2) ExitProcess(0);
 
     int i = 1;
-
     HANDLE hFile = NULL;
+    BOOL append = 0;
+    LPWSTR outfile = 0;
 
+    if (! lstrcmpW(Argv[i], L"-a")) {
+        i++;
+        append = 1;
+    }
+    
+    if (! lstrcmpW(Argv[i], L"-o")) {
+        i++;
+        if (i < Argc)
+            outfile = Argv[i++];
+        else {
+            MessageBoxW(NULL, L"Redirection file not specified", hidcon, MB_OK);
+            ExitProcess(1);
+        }
+    }
+    
     // Redirect STDOUT and STDERR to file
-    if (i + 2 <= Argc && lstrcmpiW(Argv[i], L"-o") == 0) {
+    if (outfile) {
         hFile = CreateFileW(
-            Argv[i + 1],
-            GENERIC_WRITE,
+            outfile,
+            FILE_APPEND_DATA | GENERIC_WRITE,
             FILE_SHARE_READ,
             NULL,
-            CREATE_ALWAYS,
+            append ? OPEN_ALWAYS : CREATE_ALWAYS,
             FILE_ATTRIBUTE_NORMAL,
             NULL
         );
         if (hFile == INVALID_HANDLE_VALUE) {
-            MessageBoxW(NULL, L"Couldn't open redirection file", L"HidCON", MB_OK);
+            MessageBoxW(NULL, L"Couldn't open redirection file", hidcon, MB_OK);
             ExitProcess(1);
         }
+        if (append) SetFilePointer(hFile, 0, 0, FILE_END);
         SetHandleInformation(hFile, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-        i += 2;
     }
 
     if (i >= Argc) ExitProcess(0);
@@ -46,7 +64,10 @@ void _Go_ (void) {
     DWORD n = SearchPathW(NULL, exe, L".exe", MAX_PATH, FullExe, NULL);
 
     if (n == 0) {
-        MessageBoxW(NULL, L"Couldn't find executable!", L"HidCON", MB_OK);
+        wchar_t msg[MAX_PATH+64];
+        lstrcpyW(msg, L"Couldn't find program ");
+        lstrcatW(msg, exe);
+        MessageBoxW(NULL, msg, hidcon, MB_OK);
         ExitProcess(2);
     }
 
@@ -87,7 +108,7 @@ void _Go_ (void) {
     );
 
     if (!ok) {
-        MessageBoxW(NULL, L"Could not start hidden console process!", L"HidCON", MB_OK);
+        MessageBoxW(NULL, L"Couldn't start hidden console process", hidcon, MB_OK);
         if (hFile) CloseHandle(hFile);
         ExitProcess(2);
     }
